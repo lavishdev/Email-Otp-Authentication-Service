@@ -21,5 +21,5 @@ public interface OtpTokenRepository extends JpaRepository<otpToken, Long> {
 
     @Modifying
     @Transactional
-    void deleteByEmail(String email);
+    void deleteAllByEmail(String email);
 }

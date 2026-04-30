@@ -19,3 +19,6 @@ spring:
 #otp settings
 otp:
   length: 6
+  otp:
+    expiry:
+      minutes: 5

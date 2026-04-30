@@ -24,6 +24,9 @@ public class otpToken {
     private String email;
 
     @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
     private String otp;
 
     @Column(nullable = false)
