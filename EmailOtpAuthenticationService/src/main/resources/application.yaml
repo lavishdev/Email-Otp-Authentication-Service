@@ -41,4 +41,7 @@ otp:
   expiry:
     minutes: 5
 
+jwt:
+  secret:
+  expiration.ms:
 
