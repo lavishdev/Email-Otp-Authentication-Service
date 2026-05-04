@@ -2,12 +2,12 @@ package com.otp.EmailOtpAuthenticationService.service;
 
 import com.otp.EmailOtpAuthenticationService.entity.otpToken;
 import com.otp.EmailOtpAuthenticationService.repository.OtpTokenRepository;
+import com.otp.EmailOtpAuthenticationService.repository.UserRepository;
 import com.otp.EmailOtpAuthenticationService.util.OtpGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -18,22 +18,26 @@ import java.time.LocalDateTime;
 @Slf4j
 public class OtpService {
 
-
     private final OtpTokenRepository otpTokenRepository;
-
+    private final UserRepository userRepository;
     private final OtpGenerator otpGenerator;
-
     private final EmailService emailService;
-
 
     @Value("${otp.expiry.minutes:5}")
     private int otpExpiryMinutes;
 
     private static final int MAX_ATTEMPTS = 3;
 
+    /**
+     * Generate and send a fresh OTP for the given email.
+     * Invalidates any previously active OTPs for that email.
+     */
     @Transactional
     public void generateAndSendOtp(String email, String name) {
+
+        // Invalidate old OTPs
         otpTokenRepository.deleteAllByEmail(email);
+
         String otp = otpGenerator.generate();
 
         otpToken token = otpToken.builder()
@@ -44,46 +48,54 @@ public class OtpService {
                 .used(false)
                 .attemptCount(0)
                 .build();
+
         otpTokenRepository.save(token);
-        emailService.SendOtpEmail(email,otp,name);
-        log.info("OTP generated and send to: {}" , email);
+
+        emailService.sendOtpEmail(email, otp, name);
+        log.info("OTP generated and sent to: {}", email);
     }
 
-
+    /**
+     * Validate the OTP entered by the user.
+     * Returns true on success, throws exception on failure.
+     */
+    @Transactional
     public boolean verifyOtp(String email, String inputOtp) {
-        otpToken otpToken = otpTokenRepository
+        otpToken token = otpTokenRepository
                 .findTopByEmailAndUsedFalseOrderByCreatedAtDesc(email)
-                .orElseThrow(() -> new RuntimeException("OTP token not found"));
+                .orElseThrow(() -> new RuntimeException("No active OTP found. Please request a new one."));
 
-        if(otpToken.isExpired()) {
-            otpTokenRepository.delete(otpToken);
-            throw new RuntimeException("OTP token expired");
+        if (token.isExpired()) {
+            otpTokenRepository.delete(token);
+            throw new RuntimeException("OTP has expired. Please request a new one.");
         }
 
-        if(otpToken.getAttemptCount() >= MAX_ATTEMPTS){
-            otpTokenRepository.delete(otpToken);
-            throw new RuntimeException("Maximum number of attempts reached");
+        if (token.getAttemptCount() >= MAX_ATTEMPTS) {
+            otpTokenRepository.delete(token);
+            throw new RuntimeException("Maximum attempts exceeded. Please request a new OTP.");
         }
 
-        if(!otpToken.getOtp().equals(inputOtp)){
-            otpToken.setAttemptCount(otpToken.getAttemptCount()+1);
-            otpTokenRepository.save(otpToken);
-            int remainingAttempts = MAX_ATTEMPTS - otpToken.getAttemptCount();
-            throw  new RuntimeException("Invalid OTP" + remainingAttempts + " attempts left");
+        if (!token.getOtp().equals(inputOtp)) {
+            token.setAttemptCount(token.getAttemptCount() + 1);
+            otpTokenRepository.save(token);
+            int remaining = MAX_ATTEMPTS - token.getAttemptCount();
+            throw new RuntimeException("Invalid OTP. " + remaining + " attempt(s) remaining.");
         }
 
-        otpToken.setUsed(true);
-        otpTokenRepository.save(otpToken);
+        // Mark OTP as used
+        token.setUsed(true);
+        otpTokenRepository.save(token);
 
-        log.info("OTP verified for email: {}" , email);
+        log.info("OTP verified successfully for: {}", email);
         return true;
-
     }
 
+    /**
+     * Clean up expired OTPs every 10 minutes.
+     */
     @Scheduled(fixedRate = 600_000)
-    public void CleanExpiredOtps(String email) {
+    public void cleanExpiredOtps() {
         otpTokenRepository.deleteExpiredTokens(LocalDateTime.now());
-        log.debug("Expired otps cleaned up");
+        log.debug("Expired OTPs cleaned up.");
     }
-
 }

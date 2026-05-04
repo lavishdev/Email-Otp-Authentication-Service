@@ -14,13 +14,11 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-
     @Value("${jwt.secret}")
     private String secret;
 
-
-    @Value(("${jwt.expiration.ms}"))
-    private Long expirationMs;
+    @Value("${jwt.expiration.ms}")
+    private long expirationMs;
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
@@ -39,22 +37,20 @@ public class JwtUtil {
         return parseClaims(token).getSubject();
     }
 
+    public boolean validateToken(String token) {
+        try {
+            parseClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-    }
-
-    public boolean validateToken(String token) {
-        try {
-            parseClaims(token);
-            return true;
-        }
-        catch (JwtException | IllegalArgumentException e) {
-            return false;
-
-        }
     }
 }

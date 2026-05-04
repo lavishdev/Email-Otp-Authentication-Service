@@ -1,12 +1,13 @@
 package com.otp.EmailOtpAuthenticationService.repository;
 
-import com.otp.EmailOtpAuthenticationService.entity.user;
+import com.otp.EmailOtpAuthenticationService.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<user,Long> {
-
-
-    Optional<user> findByEmail(String email);
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByEmail(String email);
+    boolean existsByEmail(String email);
 }

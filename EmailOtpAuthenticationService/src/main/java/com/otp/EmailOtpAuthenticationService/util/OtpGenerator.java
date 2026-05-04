@@ -10,14 +10,14 @@ public class OtpGenerator {
 
     @Value("${otp.length:6}")
     private int otpLength;
-    private static final SecureRandom random = new SecureRandom();
+
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     public String generate() {
         StringBuilder otp = new StringBuilder();
         for (int i = 0; i < otpLength; i++) {
-            otp.append(random.nextInt(10));
+            otp.append(RANDOM.nextInt(10));
         }
         return otp.toString();
     }
-
 }
