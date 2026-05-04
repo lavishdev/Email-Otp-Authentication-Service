@@ -2,7 +2,7 @@
 
 A production-ready **Spring Boot** application that authenticates users via **email-based One-Time Passwords (OTP)** and issues **JWT tokens** for session management — no passwords required.
 
-> 📺 **Watch the full walkthrough:** [Email-Based-OTP-Authentication on YouTube](https://youtu.be/-tIf34OYG14)
+
 
 ---
 
@@ -271,7 +271,7 @@ eyJhbGciOiJIUzI1NiJ9      ← Header  (algorithm)
 
 | Technology               | Purpose                          |
 |--------------------------|----------------------------------|
-| Java 17                  | Language                         |
+| Java 25                  | Language                         |
 | Spring Boot 3.2          | Application framework            |
 | Spring Security          | Stateless auth filter chain      |
 | Spring Mail              | Gmail SMTP integration           |
